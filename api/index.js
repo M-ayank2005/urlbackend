@@ -17,7 +17,7 @@ connect(process.env.MONGO_URI)
         console.error('Error connecting to MongoDB', err);
     });
 
-app.use("/url", urlRouter);
+app.use("/api/url", urlRouter);
 
 app.get('/:shortID', async (req, res) => {
     const shortID = req.params.shortID;
