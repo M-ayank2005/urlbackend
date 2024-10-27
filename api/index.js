@@ -3,11 +3,11 @@ const cors = require('cors');
 
 const app = express();
 const urlRouter = require('./routes/url');
-const {connect}=require('./connect');
+const { connect } = require('./connect');
 const URL = require('../models/url');
-app.use(express.json()); 
-app.use(cors());
 
+app.use(express.json());
+app.use(cors());
 
 connect(process.env.MONGO_URI)
     .then(() => {
@@ -17,22 +17,33 @@ connect(process.env.MONGO_URI)
         console.error('Error connecting to MongoDB', err);
     });
 
-app.use("/api/url", urlRouter);
-
+// Route for handling the shortened URL
 app.get('/:shortID', async (req, res) => {
     const shortID = req.params.shortID;
-    const result= await URL.findOneAndUpdate({ 
-        shortID },
-        {
-            $push: {
-                visitHistory: {
-                    timeStamp: Date.now()
+    try {
+        const result = await URL.findOneAndUpdate(
+            { shortID },
+            {
+                $push: {
+                    visitHistory: {
+                        timeStamp: Date.now()
+                    }
                 }
-            }
-        });
-      res.redirect(result.redirectURL);
+            },
+            { new: true }
+        );
 
+        if (result) {
+            res.redirect(result.redirectURL);
+        } else {
+            res.status(404).send('Short URL not found');
+        }
+    } catch (error) {
+        console.error('Error fetching the short URL:', error);
+        res.status(500).send('Internal Server Error'); 
     }
-);
+});
+
+app.use("/api/url", urlRouter);
 
 module.exports = app;
