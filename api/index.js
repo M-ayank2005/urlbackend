@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 
 const app = express();
-const urlRouter = require('./routes/url');
+const urlRouter = require('./url');
 const { connect } = require('./connect');
 const URL = require('../models/url');
 
