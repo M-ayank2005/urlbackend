@@ -23,5 +23,8 @@ const urlSchema = new mongoose.Schema({
     timestamps: true
 });
 
+// Add index for faster lookups on shortID
+urlSchema.index({ shortID: 1 });
+
 const URL = mongoose.model('url', urlSchema);
 module.exports = URL;
