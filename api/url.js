@@ -1,7 +1,7 @@
 const express=require('express');
 const router=express.Router();
 
-const URL = require('../models/url');
+// Note: URL model is imported in controller, not needed here
 const {handleGenerateNewShortURL,handleGetAnalytics}=require('../controllers/url');
 
 router.post('/',handleGenerateNewShortURL);

@@ -1,3 +1,5 @@
+require('dotenv').config(); // Load environment variables
+
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
@@ -6,7 +8,7 @@ const helmet = require('helmet');
 const app = express();
 const urlRouter = require('./url');
 const { connect } = require('./connect');
-const URL = require('../models/url');
+const URLModel = require('../models/url'); // Renamed to avoid conflict with global URL
 const { urlCache, getCacheStats } = require('../services/cache');
 
 // Body parser middleware - BEFORE other middleware
@@ -17,7 +19,8 @@ const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:3001',
     'https://url-short-beryl.vercel.app', // Fixed: removed trailing slash
-    'https://urlbackend-3bwm.onrender.com' // Add your backend URL too
+    'https://urlbackend-3bwm.onrender.com',
+    'https://urlbackend.vercel.app' // Add your backend URL too
 ];
 
 app.use(cors({
@@ -85,7 +88,8 @@ app.get('/api/health', (req, res) => {
 });
 
 // Apply rate limiter to URL creation routes
-app.use("/api/url", createLimiter, urlRouter);
+// Temporarily disabled for debugging
+app.use("/api/url", urlRouter); // createLimiter temporarily removed
 
 // Route for handling the shortened URL with caching
 app.get('/:shortID', redirectLimiter, async (req, res) => {
@@ -102,7 +106,7 @@ app.get('/:shortID', redirectLimiter, async (req, res) => {
         
         if (cachedURL) {
             // Cache hit - update visit history in background (don't wait)
-            URL.findOneAndUpdate(
+            URLModel.findOneAndUpdate(
                 { shortID },
                 {
                     $push: {
@@ -118,7 +122,7 @@ app.get('/:shortID', redirectLimiter, async (req, res) => {
         }
         
         // Cache miss - fetch from database
-        const result = await URL.findOneAndUpdate(
+        const result = await URLModel.findOneAndUpdate(
             { shortID },
             {
                 $push: {

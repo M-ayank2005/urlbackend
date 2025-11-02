@@ -1,13 +1,19 @@
 const nanoid = require('nano-id');
-const validator = require('validator');
-const URL = require('../models/url');
+const URLModel = require('../models/url'); // Renamed to avoid conflict with global URL
 const { urlCache } = require('../services/cache');
 
-// URL validation helper
-const isValidURL = (url) => {
+// URL validation helper - using native URL constructor
+const isValidURL = (urlString) => {
     try {
+        console.log('Validating URL:', urlString);
+        console.log('Type of URL:', typeof urlString);
+        
         // First, try to create URL object - basic validation
-        const urlObj = new URL(url);
+        const urlObj = new URL(urlString);
+        
+        console.log('URL parsed successfully');
+        console.log('Protocol:', urlObj.protocol);
+        console.log('Hostname:', urlObj.hostname);
         
         // Check protocol
         if (!['http:', 'https:'].includes(urlObj.protocol)) {
@@ -35,6 +41,7 @@ const isValidURL = (url) => {
             }
         }
         
+        console.log('Validation passed!');
         return true;
     } catch (error) {
         console.log('URL validation error:', error.message);
@@ -72,7 +79,7 @@ async function handleGenerateNewShortURL(req, res) {
     
     // Check if URL already exists in database to avoid duplicates
     try {
-        const existingURL = await URL.findOne({ redirectURL: body.url });
+        const existingURL = await URLModel.findOne({ redirectURL: body.url });
         if (existingURL) {
             // Cache the existing URL
             urlCache.set(existingURL.shortID, existingURL.redirectURL);
@@ -97,7 +104,7 @@ async function handleGenerateNewShortURL(req, res) {
             shortID = nanoid(8); // Increased from 6 to 8 for lower collision probability
             
             // Check if shortID already exists
-            const existingID = await URL.findOne({ shortID });
+            const existingID = await URLModel.findOne({ shortID });
             
             if (!existingID) {
                 break; // Found unique ID
@@ -114,7 +121,7 @@ async function handleGenerateNewShortURL(req, res) {
         }
         
         // Create new URL entry
-        const newURL = await URL.create({
+        const newURL = await URLModel.create({
             shortID: shortID,
             redirectURL: body.url,
             visitHistory: []
@@ -149,7 +156,7 @@ async function handleGetAnalytics(req, res) {
     }
     
     try {
-        const result = await URL.findOne({ shortID });
+        const result = await URLModel.findOne({ shortID });
         
         if (!result) {
             return res.status(404).json({ 
