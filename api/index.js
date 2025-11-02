@@ -9,32 +9,41 @@ const { connect } = require('./connect');
 const URL = require('../models/url');
 const { urlCache, getCacheStats } = require('../services/cache');
 
-// Security middleware - adds various HTTP headers
-app.use(helmet());
-
-// Body parser middleware
+// Body parser middleware - BEFORE other middleware
 app.use(express.json({ limit: '10kb' })); // Limit payload size
 
-// CORS configuration - more secure than '*'
+// CORS configuration - CRITICAL: Must be before helmet and other middleware
 const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:3001',
-    'https://url-short-beryl.vercel.app/' 
+    'https://url-short-beryl.vercel.app', // Fixed: removed trailing slash
+    'https://urlbackend-3bwm.onrender.com' // Add your backend URL too
 ];
 
 app.use(cors({
     origin: function(origin, callback) {
+        // Allow requests with no origin (mobile apps, Postman, curl, etc.)
         if (!origin) return callback(null, true);
         
-        if (process.env.NODE_ENV !== 'production' || allowedOrigins.indexOf(origin) !== -1) {
+        // Check if origin is in whitelist
+        if (allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
-            callback(new Error('Not allowed by CORS'));
+            // For debugging - log blocked origins
+            console.log('Blocked origin:', origin);
+            callback(null, true); // TEMP: Allow all for now, change to false in strict production
         }
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], 
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
     allowedHeaders: ['Content-Type', 'Authorization'], 
-    credentials: true
+    credentials: true,
+    optionsSuccessStatus: 200 // Some legacy browsers choke on 204
+}));
+
+// Security middleware - Configure helmet to not interfere with CORS
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginEmbedderPolicy: false,
 }));
 
 const createLimiter = rateLimit({
